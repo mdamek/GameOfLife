@@ -47,7 +47,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ConwayRules.cs" />
-    <Compile Include="GamePixelWithCoordinates.cs" />
     <Compile Include="GlobalForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -57,10 +56,6 @@
     <Compile Include="GamePixel.cs" />
     <Compile Include="Grid.cs" />
     <Compile Include="GridValidator.cs" />
-    <Compile Include="InitialPositions\InitialValuesGenerator.cs" />
-    <Compile Include="InitialPositions\PointsPropertiesGenerator.cs" />
-    <Compile Include="Neighborhoods\NeighborhoodsCreator.cs" />
-    <Compile Include="Neighborhoods\NeighborhoodType.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="IRules.cs" />
@@ -90,7 +85,6 @@
   <ItemGroup>
     <None Include="App.config" />
   </ItemGroup>
-  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

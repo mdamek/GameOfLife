@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using Timer = System.Windows.Forms.Timer;
 
@@ -15,10 +13,7 @@ namespace GameOfLife
         private Grid Grid { get; set; }
         private int GlobalWidth { get; set; }
         private int GlobalHeight { get; set; }
-        private List<GamePixelWithCoordinates> ActualView { get; set; }
-        private int _maxHeight = 1000;
-        private int _maxWidth = 1000;
-        private Bitmap bitmap;
+        private List<GamePixel> ActualView { get; set; }
 
         public GlobalForm()
         {
@@ -35,11 +30,10 @@ namespace GameOfLife
             if (!gridValidator.Validate(width, height, randomElementsNumber, interval)) return;
             PauseButton.Enabled = true;
             Grid = null;
-            TimesList.Items.Clear();
             Timer?.Dispose();
             GlobalWidth = width;
             GlobalHeight = height;
-            Grid = new Grid(width, height, randomElementsNumber, false);
+            Grid = new Grid(width, height, randomElementsNumber);
             PauseButton.Text = "Pause";
             Timer = new Timer {Interval = interval };
             Timer.Tick += (localSender, locale) => Simulation();
@@ -53,105 +47,82 @@ namespace GameOfLife
             {
                 case "Pause":
                     PauseButton.Text = "Continue";
+                    GodModeLabel.Visible = true;
                     Timer.Stop();
                     break;
                 case "Continue":
                     PauseButton.Text = "Pause";
                     Timer.Start();
+                    GodModeLabel.Visible = false;
                     break;
                 default:
                     throw new ArgumentException("There are only two states");
             }
         }
 
+        private void Draw(List<GamePixel> elementsToDraw, int width, int height)
+        {
+
+            var screen = Screen.FromControl(this);
+            var workingArea = screen.WorkingArea;
+
+            var workingWidth = workingArea.Height - 40;
+            var workingHeight = workingWidth;
+
+            var elementWidth = workingWidth / width;
+            var elementHeight = workingHeight / height;
+
+            var bitmap = new Bitmap(workingWidth, workingHeight);
+            boardPictureBox.Width = workingWidth;
+            boardPictureBox.Height = workingHeight;
+
+            foreach (var gamePixel in elementsToDraw)
+            {
+                using (var graphics = Graphics.FromImage(bitmap))
+                {
+                    graphics.FillRectangle(Brushes.Black, new Rectangle(gamePixel.X * elementWidth, gamePixel.Y * elementHeight, elementWidth, elementHeight));
+                }
+            }          
+            boardPictureBox.Image = bitmap;
+        }
+
         private void Simulation()
         {
-            bitmap = new Bitmap(_maxWidth, _maxWidth / GlobalWidth * GlobalHeight);
-            boardPictureBox.Width = bitmap.Width;
-            boardPictureBox.Height = bitmap.Height;
-            ActualView = Grid.Grained.ToList();
+            ActualView = Grid.GetUsedPixels();
             Draw(ActualView, GlobalWidth, GlobalHeight);
-            Grid.MakeNewGeneration(TimesList);
-        }
+            Grid.MakeNewGeneration(new ConwayRules());
 
-        private void Draw(List<GamePixelWithCoordinates> elementsToDraw, int width, int height)
-        {
-            var stopWatch = new Stopwatch();
-            stopWatch.Start();
-            if (width >= height)
-            {
-                var elementSize = _maxWidth / width;
-                for (var i = 0; i < elementsToDraw.Count; i++)
-                {
-                    var actual = elementsToDraw[i];
-                    using (var graphics = Graphics.FromImage(bitmap))
-                    {
-                        using (var brush = new SolidBrush(actual.Color))
-                        {
-                            graphics.FillRectangle(brush, new Rectangle(actual.X * elementSize, actual.Y * elementSize, elementSize, elementSize));
-                        }
-                    }
-                }
-                boardPictureBox.Image = bitmap;
-            }
-            else
-            {
-                var elementSize = _maxHeight / height;
-                var bitmap = new Bitmap(_maxHeight, elementSize * width);
-                boardPictureBox.Width = bitmap.Width;
-                boardPictureBox.Height = bitmap.Height;
-                foreach (var gamePixel in elementsToDraw)
-                {
-                    using (var graphics = Graphics.FromImage(bitmap))
-                    {
-                        using (var brush = new SolidBrush(gamePixel.Color))
-                        {
-                            graphics.FillRectangle(brush, new Rectangle(gamePixel.X, gamePixel.Y, elementSize, elementSize));
-                        }
-                    }
-                }
-                boardPictureBox.Image = null;
-                boardPictureBox.Image = bitmap;
-            }
-            stopWatch.Stop();
-            var row = new ListViewItem(new[]{ "Draw", stopWatch.ElapsedMilliseconds.ToString() } );
-            TimesList.Items.Insert(0, row);
-            if (ActualView.Count != Grid.HeightElementsNumber * Grid.WidthElementsNumber) return;
-            Timer.Stop();
-            MessageBox.Show("All grains are ready", "Information", MessageBoxButtons.OK);
         }
-
-       
 
         private void boardPictureBox_Click(object sender, EventArgs e)
         {
-            //var me = (MouseEventArgs)e;
-            //var x = me.X;
-            //var y = me.Y;
-            //var screen = Screen.FromControl(this);
-            //var workingArea = screen.WorkingArea;
+            var me = (MouseEventArgs)e;
+            var x = me.X;
+            var y = me.Y;
+            var screen = Screen.FromControl(this);
+            var workingArea = screen.WorkingArea;
 
-            //var workingWidth = workingArea.Height - 40;
-            //var workingHeight = workingWidth;
+            var workingWidth = workingArea.Height - 40;
+            var workingHeight = workingWidth;
 
-            //var elementWidth = workingWidth / GlobalWidth;
-            //var elementHeight = workingHeight / GlobalHeight;
+            var elementWidth = workingWidth / GlobalWidth;
+            var elementHeight = workingHeight / GlobalHeight;
 
-            //var finalX = x / elementWidth;
-            //var finalY = y / elementHeight;
+            var finalX = x / elementWidth;
+            var finalY = y / elementHeight;
 
-            //var pixel = Grid.ChangeOnePixelColor(finalX, finalY);
-            //if (pixel.IsGrain())
-            //{
-            //    ActualView.Add(new GamePixel(finalX, finalY, 1, true, Color.AliceBlue));
-            //}
-            //else
-            //{
-            //    var element = ActualView.First(u => u.X == pixel.X && u.Y == pixel.Y);
-            //    ActualView.Remove(element);
-            //}
+            var pixel = Grid.ChangeOnePixelColor(finalX, finalY);
+            if (pixel.IsAlive())
+            {
+                ActualView.Add(new GamePixel(finalX, finalY, true));
+            }
+            else
+            {
+                var element = ActualView.First(u => u.X == pixel.X && u.Y == pixel.Y);
+                ActualView.Remove(element);
+            }
 
-            //Draw(ActualView, GlobalWidth, GlobalHeight);
+            Draw(ActualView, GlobalWidth, GlobalHeight);
         }
     }
 }

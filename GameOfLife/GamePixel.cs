@@ -1,23 +1,35 @@
 ﻿using System;
-using System.Drawing;
 
 namespace GameOfLife
 {
     public class GamePixel
     {
-        public bool GrainValue { get; set; }
-        public int Id { get; set; }
-        public Color Color { get; set; }
+        private bool Value { get; set; }
+        public int X { get; }
+        public int Y { get; }
 
-        public bool IsGrain()
+        public GamePixel(int x, int y, bool value = false)
         {
-            return GrainValue;
+            Value = value;
+            X = x;
+            Y = y;
         }
 
-        public void MakeGrain()
+        public bool IsAlive()
         {
-            if (GrainValue) throw new ArgumentException("Pixel already grain");
-            GrainValue = true;
+            return Value;
+        }
+
+        public void Revive()
+        {
+            if (Value) throw new ArgumentException("Pixel already live");
+            Value = true;
+        }
+
+        public void Kill()
+        {
+            if (!Value) throw new ArgumentException("Pixel is already dead");
+            Value = false;
         }
     }
 }
